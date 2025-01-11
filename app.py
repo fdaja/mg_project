@@ -7,6 +7,8 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import timedelta, datetime
 import os
 import logging
+import random
+
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
