@@ -1,53 +1,52 @@
 from flask import Flask, jsonify, request
-import random
 from flask_jwt_extended import JWTManager, create_access_token, jwt_required, get_jwt_identity
 from flask_cors import CORS
 from flask_mail import Mail, Message
+from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import generate_password_hash, check_password_hash
-from datetime import timedelta, datetime  # Import timedelta and datetime together
+from datetime import timedelta
 import psycopg2
-import requests
+import os
+import logging
+from config import DATABASE_CONFIG
 
+# Set up logging
+logging.basicConfig(level=logging.INFO)
 
-try:
-    import psycopg2
-except ImportError:
-    psycopg2 = None
-    print("psycopg2 module is not installed. Install it by running 'pip install psycopg2-binary'.")
-
-try:
-    from config import DATABASE_CONFIG
-except ImportError:
-    DATABASE_CONFIG = None
-    print("DATABASE_CONFIG could not be imported. Ensure 'config.py' exists and defines DATABASE_CONFIG.")
-
+# Flask app initialization
 app = Flask(__name__)
 CORS(app, resources={r"/*": {"origins": "http://localhost:3000"}})
 
 # JWT configuration
-app.config['JWT_SECRET_KEY'] = 'your-strong-secret-key'
+app.config['JWT_SECRET_KEY'] = os.getenv('JWT_SECRET_KEY', 'your-default-secret-key')
 app.config['JWT_ACCESS_TOKEN_EXPIRES'] = timedelta(hours=1)
-
-
 jwt = JWTManager(app)
 
 # Flask-Mail configuration
 app.config['MAIL_SERVER'] = 'smtp.gmail.com'
 app.config['MAIL_PORT'] = 587
 app.config['MAIL_USE_TLS'] = True
-app.config['MAIL_USERNAME'] = 'dajafranko@gmail.com'
-app.config['MAIL_PASSWORD'] = 'qcwn chhd xpep efdh'
-
+app.config['MAIL_USERNAME'] = os.getenv('MAIL_USERNAME', 'default@example.com')
+app.config['MAIL_PASSWORD'] = os.getenv('MAIL_PASSWORD', 'default-password')
 mail = Mail(app)
 
-# Database connection function
+# SQLAlchemy configuration
+app.config['SQLALCHEMY_DATABASE_URI'] = (
+    f"postgresql://{DATABASE_CONFIG['user']}:{DATABASE_CONFIG['password']}@"
+    f"{DATABASE_CONFIG['host']}:{DATABASE_CONFIG['port']}/{DATABASE_CONFIG['database']}"
+)
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+db = SQLAlchemy(app)
+
+# Database connection function for raw psycopg2 usage
 def get_db_connection():
-    if not psycopg2:
-        raise ImportError("psycopg2 is not available. Please ensure it is installed.")
-    if not DATABASE_CONFIG:
-        raise ImportError("DATABASE_CONFIG is not available. Please ensure it is correctly defined in 'config.py'.")
-    conn = psycopg2.connect(**DATABASE_CONFIG)
-    return conn
+    try:
+        conn = psycopg2.connect(**DATABASE_CONFIG)
+        logging.info("Database connection established")
+        return conn
+    except Exception as e:
+        logging.error(f"Database connection failed: {e}")
+        raise
 
 def send_confirmation_email(email, confirmation_code):
     try:
@@ -798,7 +797,7 @@ def send_search_email(serial_number, search_details):
     # Send the email
     msg = Message(
         subject=email_subject,
-        sender='your_email@gmail.com',  # Replace with your email
+        sender=app.config['MAIL_USERNAME']
         recipients=[user_email],
         body=email_body
     )
@@ -811,6 +810,17 @@ def send_search_email(serial_number, search_details):
 
 
 
+class User(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100), nullable=False)
+    username = db.Column(db.String(100), unique=True, nullable=False)
+    email = db.Column(db.String(100), unique=True, nullable=False)
+    password_hash = db.Column(db.String(200), nullable=False)
+    is_verified = db.Column(db.Boolean, default=False)
+    confirmation_code = db.Column(db.String(6))
+
+    def __repr__(self):
+        return f'<User {self.username}>'
 
 
 
