@@ -15,7 +15,7 @@ logging.basicConfig(level=logging.INFO)
 
 # Flask app initialization
 app = Flask(__name__)
-CORS(app, resources={r"/*": {"origins": "http://localhost:3000"}})
+CORS(app, resources={r"/*": {"origins": "https://frontend-lrqbxtbz9-frankos-projects-be10f17b.vercel.app"}})
 
 # JWT configuration
 app.config['JWT_SECRET_KEY'] = os.getenv('JWT_SECRET_KEY', 'your-default-secret-key')
