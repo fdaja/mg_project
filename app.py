@@ -32,10 +32,10 @@ mail = Mail(app)
 
 # Database configuration
 DATABASE_CONFIG = {
-    'dbname': 'mg_project',
-    'user': 'postgres',
-    'password': 'Daja2409',
-    'host': 'localhost',
+    'dbname': 'mg_project_db',
+    'user': 'mg_project_db_user',
+    'password': 'rrZSCsARiiQamSHGu91ltc7ahlyOg46F',
+    'host': 'dpg-cu0r40bqf0us73d2kol0-a',
     'port': 5432
 }
 
